@@ -3,7 +3,6 @@ import { createRouter, createWebHistory } from 'vue-router';
 import Login from '@/components/LoginUser.vue';
 import Dashboard from '@/components/DashboardUser.vue';
 import Experiment from '@/components/ExperimentUser.vue';
-import LineChart from '@/components/LineChart.vue';
 import Comparison from '@/components/ComparationExperiment.vue';
 import { auth } from '@/firebaseConfig';
 
@@ -15,18 +14,13 @@ const routes = [
   { 
     path: '/dashboard', 
     component: Dashboard, 
-    meta: { requiresAuth: true } 
+    meta: { requiresAuth: true }, 
+    props: true,
   },
   { 
     path: '/experiment/:id', 
     component: Experiment, 
     meta: { requiresAuth: true },
-    props: true,
-  },
-  { 
-    path: '/linechart/:id', 
-    component: LineChart, 
-    meta: { requiresAuth: true }, 
     props: true,
   },
   { 

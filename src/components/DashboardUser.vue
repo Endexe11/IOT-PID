@@ -6,11 +6,19 @@
     </div>
     <div class="dashboard-row">
       <div class="dashboard-column">
-        <div class="dashboard-card" @click="startExperiment">
-          <div class="card-title">Iniciar Experimento</div>
-          <div class="card-description">Inicia los experimentos secuencialmente</div>
+        <div class="dashboard-card" @click="startExperiment1">
+          <div class="card-title">Iniciar Experimento 1</div>
         </div>
+        <div class="dashboard-card" @click="startExperiment2">
+          <div class="card-title">Iniciar Experimento 2</div>
+        </div>
+        <div class="dashboard-card" @click="startExperiment3">
+          <div class="card-title">Iniciar Experimento 3</div>
+        </div>
+      <div class="dashboard-card" @click="Resultados">
+        <div class="card-title">Resultados</div>
       </div>
+    </div>
     </div>
     <div class="info-section">
       <h2>¿Cómo funciona un control PID?</h2>
@@ -88,9 +96,18 @@ export default {
       router.push('/');
     };
 
-    const startExperiment = () => {
+    const startExperiment1 = () => {
       router.push(`/experiment/1`);
     };
+    const startExperiment2 = () => {
+      router.push(`/experiment/2`);
+    };
+    const startExperiment3 = () => {
+      router.push(`/experiment/3`);
+    };
+    const Resultados = () =>{
+      router.push( `/comparison` )
+    }
 
     const renderMath = (texString) => {
       return katex.renderToString(texString, {
@@ -98,7 +115,7 @@ export default {
       });
     };
 
-    return { logout, startExperiment, renderMath };
+    return { logout, startExperiment1, startExperiment2, startExperiment3, Resultados, renderMath };
   }
 };
 </script>

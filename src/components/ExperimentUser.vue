@@ -1,6 +1,6 @@
 <template>
   <div class="experiment-user">
-    <h2>Iniciar Experimento {{ currentExperiment }}</h2>
+    <h2>Iniciar Experimento {{ experimentId }}</h2>
     <div class="form-group">
       <label for="kp">Constante proporcional Kp:</label>
       <input type="text" id="kp" v-model="Kp" placeholder="Ingrese el valor de Kp" :disabled="experimentStarted">
@@ -18,10 +18,10 @@
       <input type="text" id="tempRef" v-model="tempRef" placeholder="Ingrese la temperatura de referencia" :disabled="experimentStarted">
     </div>
     <button @click="startExperiment" :disabled="experimentStarted">Iniciar Experimento</button>
-    <button v-if="experimentStarted && currentExperiment < 3" @click="nextExperiment"  >Siguiente Experimento</button>
-    <button v-if="currentExperiment === 3 && experimentStarted" @click="finishExperiments">Finalizar Experimentos</button>
+    <button v-if="experimentStarted" @click="finishExperiments">Finalizar Experimento</button>
+
     <div v-if="experimentStarted && experimentData" class="chart-container">
-      <LineChart :experimentData="experimentData" :experimentId="currentExperiment"></LineChart>
+      <LineChart :experimentData="experimentData" :experimentId="experimentId"></LineChart>
     </div>
   </div>
 </template>
@@ -33,7 +33,7 @@ import LineChart from "@/components/LineChart.vue";
 
 export default {
   components: {
-    LineChart
+    LineChart,
   },
   data() {
     return {
@@ -43,8 +43,12 @@ export default {
       tempRef: '',
       experimentStarted: false,
       experimentData: {},
-      currentExperiment: 1 // Iniciar con el experimento 1
     };
+  },
+  computed: {
+    experimentId() {
+      return parseInt(this.$route.params.id);
+    }
   },
   methods: {
     async startExperiment() {
@@ -54,7 +58,6 @@ export default {
           throw new Error("Usuario no autenticado.");
         }
 
-        // Convertir los valores a números
         const Kp = parseFloat(this.Kp);
         const Ki = parseFloat(this.Ki);
         const Kd = parseFloat(this.Kd);
@@ -64,50 +67,37 @@ export default {
           throw new Error('Por favor, ingrese valores numéricos válidos.');
         }
 
-        // Llamar al servicio para iniciar el experimento correspondiente
         await experimentService.setParametersToExperiment(
-          { Kp, Ki, Kd, temperaturaReferencia, },
+          { Kp, Ki, Kd, temperaturaReferencia },
           uid,
-          this.currentExperiment
+          this.experimentId
         );
 
-        await experimentService.setExperimentStarted(uid, this.currentExperiment, started);
+        await experimentService.setExperimentStarted(uid, this.experimentId, started);
 
-
-        // Escuchar cambios en tiempo real de la base de datos para el experimento actual
-        experimentService.getExperimentData(uid, this.currentExperiment, (data) => {
+        experimentService.getExperimentData(uid, this.experimentId, (data) => {
           if (data) {
             const timestamps = Object.keys(data).slice(-500);
             this.experimentData = timestamps.reduce((acc, timestamp) => {
               acc[timestamp] = data[timestamp];
               return acc;
             }, {});
+
+            const lastDataPoint = this.experimentData[timestamps[timestamps.length - 1]];
           }
         });
 
-        // Cambiar el estado de experimentStarted
         this.experimentStarted = true;
-        alert(`El experimento ${this.currentExperiment} se inició correctamente.`);
+        alert(`El experimento ${this.experimentId} se inició correctamente.`);
       } catch (error) {
         console.error("Error al iniciar el experimento:", error);
         alert(`Ocurrió un error al iniciar el experimento: ${error.message}`);
       }
     },
-    nextExperiment() {
-      if (this.currentExperiment < 3) {
-        this.currentExperiment++;
-        this.experimentStarted = false; // Restablecer el formulario
-        this.Kp = '';
-        this.Ki = '';
-        this.Kd = '';
-        this.tempRef = '';
-        this.experimentData = {}; // Reiniciar los datos del experimento
-      }
-    },
     finishExperiments() {
-      // Redirigir al usuario a la página de comparación
-      this.$router.push("/comparison");
-    }
+      this.experimentStarted = false;
+      this.$router.push(`/dashboard`);
+    },
   }
 };
 </script>
@@ -161,7 +151,10 @@ button:hover:enabled {
 .chart-container {
   margin-top: 20px;
 }
+
 </style>
+
+
 
 
 

@@ -1,5 +1,16 @@
 <template>
   <div>
+    <div class="indicators-container">
+      <div class="indicator">
+        <h3>Estado del LED:</h3>
+        <LedIndicator :pwm="ledPWM" />
+      </div>
+      <div class="indicator">
+        <h3>Estado del Cooler:</h3>
+        <CoolerIndicator :pwm="coolerPWM" />
+      </div>
+    </div>
+
     <canvas ref="lineChartCanvas"></canvas>
     <div class="temperature-info">
       <p>Temperatura Actual: {{ latestActualTemperature }} °C</p>
@@ -18,6 +29,8 @@ import 'chartjs-adapter-date-fns';
 import { auth, database } from '../firebaseConfig';
 import { ref as firebaseRef, onValue, off, remove, set } from 'firebase/database';
 import { getStorage, ref as storageRef, uploadString, getDownloadURL } from 'firebase/storage';
+import LedIndicator from "@/components/LedIndicator.vue";
+import CoolerIndicator from "@/components/CoolerIndicator.vue";
 
 export default {
   name: 'LineChart',
@@ -29,7 +42,11 @@ export default {
     experimentId: {
       type: Number,
       required: true
-    }
+    },
+  },
+  components: {
+    LedIndicator,
+    CoolerIndicator
   },
   setup(props) {
     const lineChartCanvas = vueRef(null);
@@ -39,6 +56,8 @@ export default {
     const paused = vueRef(false);
     const latestActualTemperature = vueRef(null);
     const latestReferenceTemperature = vueRef(null);
+    const ledPWM = vueRef(0);
+    const coolerPWM = vueRef(0);
 
     const updateChart = () => {
       if (lineChartCanvas.value) {
@@ -47,7 +66,7 @@ export default {
         const dataEntries = Object.entries(localExperimentData.value); 
         const limitedDataEntries = dataEntries.slice(-500);
 
-        const labels = limitedDataEntries.map(([timestamp]) => new Date(parseInt(timestamp)*1000));
+        const labels = limitedDataEntries.map(([timestamp]) => new Date(parseInt(timestamp) * 1000));
         const actualTemperatures = limitedDataEntries.map(([, data]) => data.Temperatura_Actual);
         const referenceTemperatures = limitedDataEntries.map(([, data]) => data.Temperatura_Referencia);
 
@@ -116,6 +135,10 @@ export default {
           const data = snapshot.val();
           if (data) {
             localExperimentData.value = data; 
+            const latestDataEntry = Object.values(data).pop();
+            ledPWM.value = latestDataEntry.ledPWM || 0;
+            coolerPWM.value = latestDataEntry.coolerPWM || 0;
+            //console.log('Data updated:', data);
           }
         });
       }
@@ -173,7 +196,10 @@ export default {
     onMounted(() => {
       updateChart();
       startDataListening();
-      intervalId = setInterval(updateChart, 5000);
+      intervalId = setInterval(() => {
+        updateChart();
+        startDataListening(); // Asegurémonos de que los datos se actualicen en cada intervalo
+      }, 5000);
     });
 
     watch(() => props.experimentData, (newVal) => {
@@ -194,7 +220,10 @@ export default {
       } else {
         updateChart();
         startDataListening();
-        intervalId = setInterval(updateChart, 5000);
+        intervalId = setInterval(() => {
+          updateChart();
+          startDataListening();
+        }, 5000);
       }
     };
 
@@ -205,7 +234,9 @@ export default {
       latestReferenceTemperature,
       togglePause,
       saveChart,
-      deleteExperimentData
+      deleteExperimentData,
+      ledPWM,
+      coolerPWM
     };
   }
 };
@@ -231,10 +262,22 @@ button:disabled {
   background-color: #d3d3d3;
   cursor: not-allowed;
 }
+
+/* Estilo para los indicadores visuales */
+.indicators-container {
+  display: flex;
+  justify-content: space-around;
+  margin-top: 20px;
+}
+
+.indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.led {
+  margin: 20px;
+  border: 5px solid rgb(0, 0, 0); /* Margen visual para resaltar el LED */
+}
 </style>
-
-
-
-
-
-
